@@ -18,7 +18,7 @@ function createPhonepePaymentRequest(data){
     if (!window.PaymentRequest) return null;
 
     var paymentRequestPhonepe = new PaymentRequest([{
-            supportedMethods: ["https://mercury-stg.phonepe.com/transact/pay"],
+            supportedMethods: ["https://mercury-stg.phonepe.com/transact/checkout"],
             data: data
         }], {total: {label: 'Cart Amount', amount: {currency: 'INR', value: '100'}}});
     return paymentRequestPhonepe;
