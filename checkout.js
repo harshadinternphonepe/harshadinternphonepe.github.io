@@ -41,7 +41,6 @@ async function canShowExpressBuy() {
     
     var data = {
         url: "ppe://expressbuy",
-        constraints: ['COUPON']
     }
     let valid;
     var paymentRequestPhonepe = createPhonepePaymentRequest(data);
