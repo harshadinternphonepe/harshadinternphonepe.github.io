@@ -43,6 +43,7 @@ async function canShowExpressBuy() {
         url: "ppe://expressbuy",
         constraints: ['COUPON']
     }
+    console.log("constraints = " + JSON.stringify(data["constraints"]));
     let valid;
     var paymentRequestPhonepe = createPhonepePaymentRequest(data);
     if(paymentRequestPhonepe == null) valid = false;
