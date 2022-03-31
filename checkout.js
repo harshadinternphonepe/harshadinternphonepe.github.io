@@ -40,7 +40,7 @@ async function canShowExpressBuy() {
     if(!Android) return false;
     
     var data = {
-        url: "ppe://expressbuy",
+        url: "ppe://expressbuy"
     }
     let valid;
     var paymentRequestPhonepe = createPhonepePaymentRequest(data);
