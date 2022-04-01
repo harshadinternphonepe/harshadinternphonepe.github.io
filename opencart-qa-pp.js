@@ -48,10 +48,12 @@ async function canShowExpressBuy() {
     if(paymentRequestPhonepe == null) valid = false;
     else valid = true;
     if(valid) console.log('payment request obj created');
-    valid = valid && await phonepeCanMakePayment(paymentRequestPhonepe);
-    if(valid) console.log('can make payment true');
-    else console.log('can make payment false');
-    valid = valid && await phonepeHasEnrolledInstrument(paymentRequestPhonepe);
+//     valid = valid && await phonepeCanMakePayment(paymentRequestPhonepe);
+//     if(valid) console.log('can make payment true');
+//     else console.log('can make payment false');
+    const appResult = await phonepeHasEnrolledInstrument(paymentRequestPhonepe);
+    console.log("appResult = " + appResult)
+    valid = valid && appResult
     if(valid) console.log('has enrolled instrument true');
     else console.log('has enrolled instrument false');
     return valid;
