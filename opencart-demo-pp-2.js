@@ -40,8 +40,7 @@ async function canShowExpressBuy() {
     if(!Android) return false;
     
     var data = {
-        url: "ppe://expressbuy",
-        constraints: ['COUPON']
+        url: "ppe://expressbuy"
     }
     console.log("constraints = " + JSON.stringify(data["constraints"]));
     let valid;
