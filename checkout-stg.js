@@ -55,6 +55,7 @@ async function canShowExpressBuy() {
     let counter = 0;
     while(counter < 25 && hasEnrolledInstrument == false)
     {
+        paymentRequestPhonepe = createPhonepePaymentRequest(data);
         hasEnrolledInstrument = await phonepeHasEnrolledInstrument(paymentRequestPhonepe);
         console.log('hasEnrolledInstrument: ' + counter + hasEnrolledInstrument);
         counter++;
