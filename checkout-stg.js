@@ -51,11 +51,16 @@ async function canShowExpressBuy() {
     valid = valid && await phonepeCanMakePayment(paymentRequestPhonepe);
     let hasEnrolledInstrument = false;
     let counter = 0;
+    var startTime, endTime;
     while(counter < 25 && hasEnrolledInstrument == false)
     {
+        startTime = performance.now();
         hasEnrolledInstrument = await phonepeHasEnrolledInstrument(paymentRequestPhonepe);
+        if(hasEnrolledInstrument) break;
         console.log('hasEnrolledInstrument: ' + counter + hasEnrolledInstrument);
         paymentRequestPhonepe = createPhonepePaymentRequest(data);
+        endTime = performance.now();
+        console.log(`Call to doSomething took ${endTime - startTime} milliseconds`);
         counter++;
     }
     console.log('loop exited');
