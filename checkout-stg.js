@@ -51,8 +51,13 @@ async function canShowExpressBuy() {
     valid = valid && await phonepeCanMakePayment(paymentRequestPhonepe);
     if(valid) console.log('can make payment true');
     else console.log('can make payment false');
-    valid = valid && await phonepeHasEnrolledInstrument(paymentRequestPhonepe);
-    if(valid) console.log('has enrolled instrument true');
-    else console.log('has enrolled instrument false');
-    return valid;
+    let hasEnrolledInstrument = await phonepeHasEnrolledInstrument(paymentRequestPhonepe);
+    let counter = 0;
+    while(counter < 25 && hasEnrolledInstrument == false)
+    {
+        hasEnrolledInstrument = await phonepeHasEnrolledInstrument(paymentRequestPhonepe);
+        console.log('hasEnrolledInstrument: ' + counter + hasEnrolledInstrument);
+        counter++;
+    }
+    return valid && hasEnrolledInstrument;
 }
