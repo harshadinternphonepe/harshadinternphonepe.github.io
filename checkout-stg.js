@@ -1,19 +1,3 @@
-async function phonepeHasEnrolledInstrument(paymentRequestPhonepe) {
-    if (paymentRequestPhonepe) {
-        let result = await paymentRequestPhonepe.hasEnrolledInstrument().catch((err) => {console.log(err); return false;})
-        return result;
-    }
-    return false;
-}
-
-async function phonepeCanMakePayment(paymentRequestPhonepe) {
-    if (paymentRequestPhonepe) {
-    let result = await paymentRequestPhonepe.canMakePayment().catch((err) => {console.log(err); return false;})
-        return result;
-    }
-    return false;
-}
-
 function createPhonepePaymentRequest(data){
     if (!window.PaymentRequest) return null;
 
@@ -34,6 +18,48 @@ function openPhonepeExpressbuy(ppeUrl, handleResponse, handleError) {
     paymentRequestPhonepe.show().then(handlePaymentResponse).catch(handleError);
 }
 
+async function expressbuyResults(){
+    var userAgent = navigator.userAgent.toLowerCase();
+    var userOperatingSystem = navigator.userAgentData.platform;
+    var canShowExpressbuy = true;
+    var network = navigator.connection.effectiveType;
+    var Android = userAgent.indexOf("android") > -1;
+    if(!Android) canShowExpressbuy = false;
+    
+    var data = {
+        url: "ppe://expressbuy"
+    }
+    var paymentRequestPhonepe = createPhonepePaymentRequest(data);
+    if(paymentRequestPhonepe == null){
+        canShowExpressbuy = false;
+    }
+    var canMakePayment = await paymentRequestPhonepe.canMakePayment();
+    var hasEnrolledInstrument = false;
+    var counter = 0;
+    var startTime, endTime;
+    startTime = performance.now();
+    while(counter < 25 && hasEnrolledInstrument == false)
+    {
+        hasEnrolledInstrument = await paymentRequestPhonepe.hasEnrolledInstrument()
+        if(hasEnrolledInstrument) break;
+        paymentRequestPhonepe = createPhonepePaymentRequest(data);
+        counter++;
+    }
+    endTime = performance.now();
+    var numberOfRetries = counter;
+    var timeTakenToDisplay = endTime - startTime;
+    canShowExpressbuy = canShowExpressbuy && canMakePayment && hasEnrolledInstrument;
+    return {
+        'userOperatingSystem': userOperatingSystem,
+        'network': network,
+        'canShowExpressbuy': canShowExpressbuy,
+        'canMakePayment': canMakePayment,
+        'hasEnrolledInstrument': hasEnrolledInstrument,
+        'numberOfRetries': numberOfRetries,
+        'timetakenToDisplay': timeTakenToDisplay
+    };
+}
+
 async function canShowExpressBuy() {
     var userAgent = navigator.userAgent.toLowerCase();
     var Android = userAgent.indexOf("android") > -1;
@@ -45,22 +71,19 @@ async function canShowExpressBuy() {
     console.log("constraints = " + JSON.stringify(data["constraints"]));
     let valid;
     var paymentRequestPhonepe = createPhonepePaymentRequest(data);
-    if(paymentRequestPhonepe == null) valid = false;
+    if(paymentRequestPhonepe == null) return false;
     else valid = true;
     if(valid) console.log('payment request obj created');
-    valid = valid && await phonepeCanMakePayment(paymentRequestPhonepe);
+    valid = valid && await paymentRequestPhonepe.canMakePayment();
     let hasEnrolledInstrument = false;
     let counter = 0;
     var startTime, endTime;
     while(counter < 25 && hasEnrolledInstrument == false)
     {
-        startTime = performance.now();
-        hasEnrolledInstrument = await phonepeHasEnrolledInstrument(paymentRequestPhonepe);
+        hasEnrolledInstrument = await paymentRequestPhonepe.hasEnrolledInstrument()
         if(hasEnrolledInstrument) break;
-        console.log('hasEnrolledInstrument: ' + counter + hasEnrolledInstrument);
+        console.log('hasEnrolledInstrument: ' + counter + '-' + hasEnrolledInstrument);
         paymentRequestPhonepe = createPhonepePaymentRequest(data);
-        endTime = performance.now();
-        console.log(`Call to doSomething took ${endTime - startTime} milliseconds`);
         counter++;
     }
     console.log('loop exited');
