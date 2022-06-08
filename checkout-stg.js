@@ -34,6 +34,17 @@ async function expressbuyResults(){
         canShowExpressbuy = false;
     }
     var canMakePayment = await paymentRequestPhonepe.canMakePayment();
+    if(canMakePayment == false){ // don't try hasEnrolledInstrument
+        return {
+        'userOperatingSystem': userOperatingSystem,
+        'network': network,
+        'canShowExpressbuy': false,
+        'canMakePayment': canMakePayment,
+        'hasEnrolledInstrument': false,
+        'numberOfRetries': 0,
+        'timeTakenToDisplay': 0
+        };
+    }
     var hasEnrolledInstrument = false;
     var counter = 0;
     var startTime, endTime;
@@ -56,7 +67,7 @@ async function expressbuyResults(){
         'canMakePayment': canMakePayment,
         'hasEnrolledInstrument': hasEnrolledInstrument,
         'numberOfRetries': numberOfRetries,
-        'timetakenToDisplay': timeTakenToDisplay
+        'timeTakenToDisplay': timeTakenToDisplay
     };
 }
 
