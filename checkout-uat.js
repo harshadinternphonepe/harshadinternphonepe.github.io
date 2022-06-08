@@ -1,19 +1,3 @@
-async function phonepeHasEnrolledInstrument(paymentRequestPhonepe) {
-    if (paymentRequestPhonepe) {
-        let result = await paymentRequestPhonepe.hasEnrolledInstrument().catch((err) => {console.log(err); return false;})
-        return result;
-    }
-    return false;
-}
-
-async function phonepeCanMakePayment(paymentRequestPhonepe) {
-    if (paymentRequestPhonepe) {
-    let result = await paymentRequestPhonepe.canMakePayment().catch((err) => {console.log(err); return false;})
-        return result;
-    }
-    return false;
-}
-
 function createPhonepePaymentRequest(data){
     if (!window.PaymentRequest) return null;
 
@@ -34,6 +18,59 @@ function openPhonepeExpressbuy(ppeUrl, handleResponse, handleError) {
     paymentRequestPhonepe.show().then(handlePaymentResponse).catch(handleError);
 }
 
+async function expressbuyResults(){
+    var userAgent = navigator.userAgent.toLowerCase();
+    var userOperatingSystem = navigator.userAgentData.platform;
+    var canShowExpressbuy = true;
+    var network = navigator.connection.effectiveType;
+    var Android = userAgent.indexOf("android") > -1;
+    if(!Android) canShowExpressbuy = false;
+    
+    var data = {
+        url: "ppe://expressbuy"
+    }
+    var paymentRequestPhonepe = createPhonepePaymentRequest(data);
+    if(paymentRequestPhonepe == null){
+        canShowExpressbuy = false;
+    }
+    var canMakePayment = await paymentRequestPhonepe.canMakePayment();
+    if(canMakePayment == false){ // don't try hasEnrolledInstrument
+        return {
+        'userOperatingSystem': userOperatingSystem,
+        'network': network,
+        'canShowExpressbuy': false,
+        'canMakePayment': canMakePayment,
+        'hasEnrolledInstrument': false,
+        'numberOfRetries': 0,
+        'timeTakenToDisplay': 0
+        };
+    }
+    var hasEnrolledInstrument = false;
+    var counter = 0;
+    var startTime, endTime;
+    startTime = performance.now();
+    while(counter < 25 && hasEnrolledInstrument == false)
+    {
+        hasEnrolledInstrument = await paymentRequestPhonepe.hasEnrolledInstrument()
+        if(hasEnrolledInstrument) break;
+        paymentRequestPhonepe = createPhonepePaymentRequest(data);
+        counter++;
+    }
+    endTime = performance.now();
+    var numberOfRetries = counter;
+    var timeTakenToDisplay = endTime - startTime;
+    canShowExpressbuy = canShowExpressbuy && canMakePayment && hasEnrolledInstrument;
+    return {
+        'userOperatingSystem': userOperatingSystem,
+        'network': network,
+        'canShowExpressbuy': canShowExpressbuy,
+        'canMakePayment': canMakePayment,
+        'hasEnrolledInstrument': hasEnrolledInstrument,
+        'numberOfRetries': numberOfRetries,
+        'timeTakenToDisplay': timeTakenToDisplay
+    };
+}
+
 async function canShowExpressBuy() {
     var userAgent = navigator.userAgent.toLowerCase();
     var Android = userAgent.indexOf("android") > -1;
@@ -45,16 +82,21 @@ async function canShowExpressBuy() {
     console.log("constraints = " + JSON.stringify(data["constraints"]));
     let valid;
     var paymentRequestPhonepe = createPhonepePaymentRequest(data);
-    if(paymentRequestPhonepe == null) valid = false;
+    if(paymentRequestPhonepe == null) return false;
     else valid = true;
     if(valid) console.log('payment request obj created');
-    valid = valid && await phonepeCanMakePayment(paymentRequestPhonepe);
-    if(valid) console.log('can make payment true');
-    else console.log('can make payment false');
-    const appResult = await phonepeHasEnrolledInstrument(paymentRequestPhonepe);
-    console.log("appResult = " + appResult)
-    valid = valid && appResult
-    if(valid) console.log('has enrolled instrument true');
-    else console.log('has enrolled instrument false');
-    return valid;
+    valid = valid && await paymentRequestPhonepe.canMakePayment();
+    let hasEnrolledInstrument = false;
+    let counter = 0;
+    var startTime, endTime;
+    while(counter < 25 && hasEnrolledInstrument == false)
+    {
+        hasEnrolledInstrument = await paymentRequestPhonepe.hasEnrolledInstrument()
+        if(hasEnrolledInstrument) break;
+        console.log('hasEnrolledInstrument: ' + counter + '-' + hasEnrolledInstrument);
+        paymentRequestPhonepe = createPhonepePaymentRequest(data);
+        counter++;
+    }
+    console.log('loop exited');
+    return valid && hasEnrolledInstrument;
 }
