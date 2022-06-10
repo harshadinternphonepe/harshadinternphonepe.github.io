@@ -9,94 +9,67 @@ function createPhonepePaymentRequest(data){
 }
 
 function openPhonepeExpressbuy(ppeUrl, handleResponse, handleError) { 
-    console.log(ppeUrl);
     var data = {
         url: ppeUrl,
     };
     var paymentRequestPhonepe = createPhonepePaymentRequest(data);
-    console.log(paymentRequestPhonepe);
     paymentRequestPhonepe.show().then(handlePaymentResponse).catch(handleError);
 }
 
-async function expressbuyResults(){
-    var userAgent = navigator.userAgent.toLowerCase();
-    var userOperatingSystem = navigator.userAgentData.platform;
-    var canShowExpressbuy = true;
-    var network = navigator.connection.effectiveType;
-    var Android = userAgent.indexOf("android") > -1;
-    if(!Android) canShowExpressbuy = false;
-    
-    var data = {
-        url: "ppe://expressbuy"
-    }
-    var paymentRequestPhonepe = createPhonepePaymentRequest(data);
-    if(paymentRequestPhonepe == null){
-        canShowExpressbuy = false;
-    }
-    var canMakePayment = await paymentRequestPhonepe.canMakePayment();
-    if(canMakePayment == false){ // don't try hasEnrolledInstrument
-        return {
-        'userOperatingSystem': userOperatingSystem,
-        'network': network,
-        'canShowExpressbuy': false,
-        'canMakePayment': canMakePayment,
-        'hasEnrolledInstrument': false,
-        'numberOfRetries': 0,
-        'timeTakenToDisplay': 0
-        };
-    }
-    var hasEnrolledInstrument = false;
-    var counter = 0;
-    var startTime, endTime;
-    startTime = performance.now();
-    while(counter < 25 && hasEnrolledInstrument == false)
-    {
-        hasEnrolledInstrument = await paymentRequestPhonepe.hasEnrolledInstrument()
-        if(hasEnrolledInstrument) break;
-        paymentRequestPhonepe = createPhonepePaymentRequest(data);
-        counter++;
-    }
-    endTime = performance.now();
-    var numberOfRetries = counter;
-    var timeTakenToDisplay = endTime - startTime;
-    canShowExpressbuy = canShowExpressbuy && canMakePayment && hasEnrolledInstrument;
+async function getExpressbuyResults(){
+    if(sessionStorage.getItem('eligibility') == null)
+        await warmupAndSaveResults();
     return {
-        'userOperatingSystem': userOperatingSystem,
-        'network': network,
-        'canShowExpressbuy': canShowExpressbuy,
-        'canMakePayment': canMakePayment,
-        'hasEnrolledInstrument': hasEnrolledInstrument,
-        'numberOfRetries': numberOfRetries,
-        'timeTakenToDisplay': timeTakenToDisplay
+        'userOperatingSystem': sessionStorage.getItem('userOperatingSystem'),
+        'network': sessionStorage.getItem('network'),
+        'eligibility': sessionStorage.getItem('eligibilityForExpressbuy'),
+        'canMakePayment': sessionStorage.getItem('canMakePayment'),
+        'hasEnrolledInstrument': sessionStorage.getItem('hasEnrolledInstrument'),
+        'retries': sessionStorage.getItem('hasEnrolledInstrumentRetries'),
+        'elapsedTime': sessionStorage.getItem('elapsedTime'),
+        'paymentRequestSupported': sessionStorage.getItem('paymentRequestSupported')
     };
 }
 
-async function canShowExpressBuy() {
-    var userAgent = navigator.userAgent.toLowerCase();
-    var Android = userAgent.indexOf("android") > -1;
-    if(!Android) return false;
+async function warmupAndSaveResults() {
+    if(sessionStorage.getItem('eligibility') != null) return;
+    var userOperatingSystem = navigator.userAgentData.platform;
+    var network = navigator.connection.effectiveType;
+    var isAndroid = false;
+    var paymentRequestSupported = false;
+    var canMakePayment = false;
+    var hasEnrolledInstrument = false;
+    var retries = sessionStorage.getItem('hasEnrolledInstrumentRetries') ?? 0;
+    var eligibility = false;
+    if(userOperatingSystem == "Android")
+        isAndroid = true;
     
     var data = {
         url: "ppe://expressbuy"
     }
-    console.log("constraints = " + JSON.stringify(data["constraints"]));
-    let valid;
     var paymentRequestPhonepe = createPhonepePaymentRequest(data);
-    if(paymentRequestPhonepe == null) return false;
-    else valid = true;
-    if(valid) console.log('payment request obj created');
-    valid = valid && await paymentRequestPhonepe.canMakePayment();
-    let hasEnrolledInstrument = false;
-    let counter = 0;
-    var startTime, endTime;
-    while(counter < 25 && hasEnrolledInstrument == false)
+    if(isAndroid && paymentRequestPhonepe != null)
     {
-        hasEnrolledInstrument = await paymentRequestPhonepe.hasEnrolledInstrument()
-        if(hasEnrolledInstrument) break;
-        console.log('hasEnrolledInstrument: ' + counter + '-' + hasEnrolledInstrument);
-        paymentRequestPhonepe = createPhonepePaymentRequest(data);
-        counter++;
+        paymentRequestSupported = true;
+        canMakePayment = await paymentRequestPhonepe.canMakePayment();
+        startTime = performance.now();
+        while(canMakePayment == true && retries < 12 && hasEnrolledInstrument == false)
+        {
+            hasEnrolledInstrument = await paymentRequestPhonepe.hasEnrolledInstrument()
+            if(hasEnrolledInstrument) break;
+            paymentRequestPhonepe = createPhonepePaymentRequest(data);
+            retries++;
+        }
+        endTime = performance.now();
+        var elapsedTime = endTime - startTime;
     }
-    console.log('loop exited');
-    return valid && hasEnrolledInstrument;
+    eligibility = isAndroid && paymentRequestSupported && canMakePayment && hasEnrolledInstrument;
+    sessionStorage.setItem('hasEnrolledInstrumentRetries', retries);
+    sessionStorage.setItem('eligibilityForExpressbuy', eligibility);
+    sessionStorage.setItem('userOperatingSystem', userOperatingSystem);
+    sessionStorage.setItem('paymentRequestSupported', paymentRequestSupported);
+    sessionStorage.setItem('hasEnrolledInstrument', hasEnrolledInstrument);
+    sessionStorage.setItem('elapsedTime', elapsedTime);
+    sessionStorage.setItem('canMakePayment', canMakePayment);
+    sessionStorage.setItem('network', network);
 }
